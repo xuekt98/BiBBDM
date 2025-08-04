@@ -1,0 +1,151 @@
+task: "Translation" # options {'Inpainting', 'Colorization', 'Translation'}
+runner: "BiBBDMRunner"
+
+training:
+  max_epochs: 200
+  max_iters: 200000
+  save_epoch_interval: 1
+  # save_iter_interval: 30000
+  # sample_iter_interval: 2000
+  # validation_iter_interval: 200
+  validation_epoch_interval: 5
+  accumulate_grad_batches: 1
+
+testing:
+  clip_denoised: False
+  sample_num: 1
+
+dataset:
+  dataset_name: 'faces2comics'
+  dataset_type: 'custom_aligned'
+  dataset_config:
+    dataset_path: '/home/xuekt/datasets/faces2comics'
+    image_size: 256
+    channels: 3
+    to_normal: True
+    flip: True
+    resize: True
+    random_crop: False
+    crop_p1: 0.5
+    crop_p2: 1.
+  train:
+    batch_size: 8
+    shuffle: True
+    num_workers: 8
+  val:
+    batch_size: 4
+    shuffle: True
+    num_workers: 8
+  test:
+    batch_size: 8
+    num_workers: 8
+    # shuffle: False
+
+model:
+  model_name: "LDM-L4-dlns"   # part of result path
+  model_type: "BiBBDM"        # specify a module
+  # model_load_path:          # model checkpoint path
+  # optim_sche_load_path:     # optimizer scheduler checkpoint path
+
+  num_timesteps: 1000         # number of training timesteps
+  sample_step: 100            # number of sampling steps
+  sample_step_type: 'linear'  # options {"linear", "sin"}
+  sample_type: 'uniform'      # options {'uniform', 'nonuniform', 'Markovian'}
+  skip_sample: True
+  
+  mt_type: 'linear'           # options {'linear', 'sin'}
+  objective: 'dlns'           # options {'a', 'grada', 'b', 'gradb', 'dlab', 'dlgab', 'noise', 'bsuba', 'dlns'}
+  loss_type: 'l1'             # options {'l1', 'l2'}
+
+  eta: 1.0                    # fast sampling process eta
+  var_scale: 2.0              # variance scale
+  m0: 0.001                   # m0
+  mT: 0.999                   # mT
+
+  weight_obj: 1.
+  weight_a_recon: 0.
+  weight_b_recon: 0.
+
+  EMA:
+    use_ema: True
+    ema_decay: 0.995
+    update_ema_interval: 16 # step
+    start_ema_step: 10000
+  
+  optimizer:
+      weight_decay: 0.000
+      optimizer: 'Adam'
+      lr: 1.e-4
+      beta1: 0.9
+
+  lr_scheduler:
+    factor: 0.5
+    patience: 3000
+    threshold: 0.0001
+    cooldown: 2000
+    min_lr: 5.e-7
+
+  UNet:
+    target: 'model.BrownianBridge.LDMbase.modules.diffusionmodules.openaimodel.UNetModel'
+    params:
+      image_size: 64
+      in_channels: 3
+      model_channels: 224
+      out_channels: 6
+      num_res_blocks: 2
+      attention_resolutions: !!python/tuple
+        - 8
+        - 16
+        - 32
+      channel_mult: !!python/tuple
+        - 1
+        - 2
+        - 3
+        - 4
+      conv_resample: True
+      dims: 2
+      num_heads: 1
+      num_head_channels: 32
+      use_scale_shift_norm: True
+      resblock_updown: True
+      use_spatial_transformer: False
+      context_dim:
+      condition_key: "nocond" # options {"SpatialRescaler", "first_stage", "nocond"}
+
+  AutoEncoder:
+    target: 'model.VQGAN.vqgan.VQModel'
+    params:
+      ckpt_path: 'results/VQGAN/vq-ldm-f4.ckpt'
+      embed_dim: 3
+      n_embed: 8192
+      ddconfig:
+        double_z: false
+        z_channels: 3
+        resolution: 256
+        in_channels: 3
+        out_ch: 3
+        ch: 128
+        ch_mult: !!python/tuple
+          - 1
+          - 2
+          - 4
+        num_res_blocks: 2
+        attn_resolutions: [ ]
+        dropout: 0.0
+
+      lossconfig:
+        target: torch.nn.Identity
+      
+      
+      
+
+      
+      
+      
+
+      
+      
+
+      
+
+      
